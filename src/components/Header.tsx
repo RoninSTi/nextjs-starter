@@ -10,6 +10,7 @@ export default function Header() {
   const navItems = [
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
+    { href: '/telemetry-dashboard', label: 'Telemetry' },
   ];
 
   return (

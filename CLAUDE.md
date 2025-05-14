@@ -16,6 +16,7 @@ This is a Next.js project bootstrapped with `create-next-app`. It uses:
 - NextAuth.js for authentication
 - next-themes for dark mode support
 - migrate-mongo for database migrations
+- OpenTelemetry for API monitoring and observability
 
 ## Common Commands
 
@@ -81,6 +82,9 @@ npm run db:reset          # Roll back all migrations and reapply them
   - `auth/` - Authentication utilities
     - `auth.ts` - Client-side authentication hooks and functions
     - `auth-options.ts` - Next Auth configuration
+- `/src/telemetry/` - OpenTelemetry configuration and utilities
+  - `index.ts` - OpenTelemetry initialization and configuration
+  - `utils.ts` - Helper functions for creating spans and metrics
 - `/src/models/` - Mongoose models
   - `User.ts` - User model for authentication
 - `/src/db/` - Database-related code
@@ -96,6 +100,8 @@ npm run db:reset          # Roll back all migrations and reapply them
 - `docker-compose.yml` - Docker configuration for local MongoDB
 - `components.json` - ShadCN UI configuration
 - `migrate-mongo-config.js` - Database migration configuration
+- `instrumentation.ts` - OpenTelemetry instrumentation entry point
+- `middleware.ts` - Next.js middleware for request tracing
 - `.env.local.example` - Example local environment variables
 - `.env.production.example` - Example production environment variables
 
@@ -290,6 +296,83 @@ npm run db:rollback
 5. Test migrations in development before applying to production
 6. Document complex migrations with comments
 
+## OpenTelemetry Integration
+
+The application is instrumented with OpenTelemetry for monitoring and observability of API routes and database operations.
+
+### Local Development Setup
+
+The project includes a complete local OpenTelemetry monitoring stack:
+
+1. **OpenTelemetry Collector**: Receives, processes, and exports telemetry data
+2. **Jaeger**: UI for visualizing and exploring traces
+
+When you run `npm run dev:full`, the entire stack is automatically started. Access the monitoring interfaces at:
+- Jaeger UI: http://localhost:16686
+- OpenTelemetry Collector: http://localhost:4318
+
+### Environment Variables
+
+Configure OpenTelemetry with these environment variables:
+
+```
+# Local development
+OTEL_SERVICE_NAME=nextjs-starter
+OTEL_COLLECTOR_URL=http://localhost:4318
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+OTEL_EXPORTER_OTLP_PROTOCOL=http/json
+OTEL_TRACES_SAMPLER=always_on
+OTEL_LOGS_EXPORTER=otlp
+
+# Production (AWS)
+# For production, configure to use AWS X-Ray or other AWS monitoring services
+```
+
+### Using Custom Spans
+
+Create custom spans in your API routes or services:
+
+```typescript
+import { createApiSpan, createDatabaseSpan, addSpanAttributes } from '@/telemetry/utils';
+
+// Wrap API handlers with spans
+export async function GET(request: NextRequest) {
+  return await createApiSpan('example.get', async () => {
+    // Your API logic here
+    
+    // Add custom attributes to spans
+    addSpanAttributes({ 'custom.attribute': 'value' });
+    
+    // Create spans for database operations
+    const result = await createDatabaseSpan('find', 'users', async () => {
+      // Database query here
+      return await User.find();
+    });
+    
+    return NextResponse.json({ data: result });
+  });
+}
+```
+
+### Instrumentation
+
+The application is automatically instrumented for:
+
+- HTTP requests and responses
+- MongoDB/Mongoose operations
+- Express/Next.js API routes
+- Fetch/API calls
+
+All telemetry data is sent to the configured OpenTelemetry collector endpoint, which forwards it to Jaeger for local development or AWS services in production.
+
+### Docker Configuration
+
+The OpenTelemetry setup is defined in:
+- `docker-compose.yml` - Container definitions for collector and Jaeger
+- `otel-collector-config.yaml` - Collector configuration
+
+When switching to production, the OpenTelemetry configuration should be updated to forward telemetry data to your AWS monitoring services instead of the local Jaeger instance.
+
 ## Notes
 
 - The project uses Geist font from Google Fonts (both sans and mono variants)
@@ -298,3 +381,4 @@ npm run db:rollback
 - The project structure follows Next.js App Router conventions
 - For production, set the MONGODB_URI environment variable to your AWS DocumentDB connection string
 - Database migrations are managed with migrate-mongo and custom utility functions
+- API monitoring is handled by OpenTelemetry with automatic and custom instrumentation
