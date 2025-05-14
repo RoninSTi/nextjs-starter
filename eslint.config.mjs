@@ -19,6 +19,13 @@ const eslintConfig = [
         "varsIgnorePattern": "^_" 
       }]
     }
+  },
+  {
+    // Ignore require imports in migrate-mongo-config.js
+    files: ["migrate-mongo-config.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off"
+    }
   }
 ];
 

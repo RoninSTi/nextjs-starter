@@ -3,7 +3,7 @@
 // Instead, it uses environment variables loaded from .env files
 
 // Load environment variables
-import dotenv from 'dotenv';
+const dotenv = require('dotenv');
 dotenv.config({
   path: process.env.NODE_ENV === 'production' ? '.env.production.local' : '.env.local',
 });
@@ -42,8 +42,8 @@ const config = {
   // Use file hash to avoid running migrations multiple times
   useFileHash: true,
 
-  // Use ESM module system for modern JavaScript features
-  moduleSystem: 'esm',
+  // Use CommonJS module system since this file is loaded as CommonJS
+  moduleSystem: 'commonjs',
 };
 
-export default config;
+module.exports = config;
