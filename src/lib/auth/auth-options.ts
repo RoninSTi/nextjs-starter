@@ -8,8 +8,8 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" }
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
@@ -21,7 +21,7 @@ export const authOptions: NextAuthOptions = {
 
         // Find the user by username
         const user = await User.findOne({ username: credentials.username });
-        
+
         // If no user is found or the password doesn't match
         if (!user || !(await user.comparePassword(credentials.password))) {
           return null;
@@ -29,12 +29,12 @@ export const authOptions: NextAuthOptions = {
 
         // Return user object that will be stored in the JWT
         return {
-          id: user._id.toString(),
+          id: user._id ? user._id.toString() : user.id,
           name: user.username,
-          email: user.email
+          email: user.email,
         };
-      }
-    })
+      },
+    }),
   ],
   session: {
     strategy: 'jwt',
@@ -61,5 +61,5 @@ export const authOptions: NextAuthOptions = {
     // error: '/auth/error', // Error code passed in query string as ?error=
     // signOut: '/auth/signout',
   },
-  secret: process.env.NEXTAUTH_SECRET || 'default-secret-key-change-in-production',
+  secret: process.env.NEXTAUTH_SECRET,
 };

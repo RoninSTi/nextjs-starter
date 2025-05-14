@@ -1,14 +1,25 @@
 import mongoose from 'mongoose';
 import { getDatabaseConfig } from './config';
 
+// Define the shape of our cached mongoose connection
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
+
+// Add mongoose to the NodeJS global type
+declare global {
+  // eslint-disable-next-line no-var
+  var mongoose: MongooseCache | undefined;
+}
+
 // Global is used here to maintain a cached connection across hot reloads
 // in development. This prevents connections growing exponentially
 // during API Route usage.
-let cached = global.mongoose || { conn: null, promise: null };
+const cached: MongooseCache = global.mongoose || { conn: null, promise: null };
 
 if (!global.mongoose) {
   global.mongoose = { conn: null, promise: null };
-  cached = global.mongoose;
 }
 
 export async function connectToDatabase() {
@@ -18,8 +29,8 @@ export async function connectToDatabase() {
 
   if (!cached.promise) {
     const { uri, options } = getDatabaseConfig();
-    
-    cached.promise = mongoose.connect(uri, options).then((mongoose) => {
+
+    cached.promise = mongoose.connect(uri, options).then(mongoose => {
       return mongoose;
     });
   }

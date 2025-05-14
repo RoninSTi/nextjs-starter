@@ -32,7 +32,9 @@ export default function UserMenu() {
     return (
       <div className="flex items-center gap-2">
         <Link href="/auth/signin">
-          <Button variant="outline" size="sm">Sign In</Button>
+          <Button variant="outline" size="sm">
+            Sign In
+          </Button>
         </Link>
         <Link href="/auth/register">
           <Button size="sm">Register</Button>
@@ -42,7 +44,8 @@ export default function UserMenu() {
   }
 
   // Get initials for avatar
-  const getInitials = (name: string = 'User') => {
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
     return name.charAt(0).toUpperCase();
   };
 
@@ -51,7 +54,7 @@ export default function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+            <AvatarFallback>{getInitials(user?.name || undefined)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

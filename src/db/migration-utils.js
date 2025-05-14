@@ -3,27 +3,27 @@
  * This file provides helper functions to simplify working with migrate-mongo
  */
 
-const { database, connect, create, up, down, status } = require('migrate-mongo');
-const path = require('path');
+import { connect, create, up, down, status } from 'migrate-mongo';
+import path from 'path';
 
 /**
  * Creates a new migration file
- * @param {string} name - The name of the migration 
+ * @param {string} name - The name of the migration
  * @returns {Promise<string>} - Path to the created migration file
  */
 async function createMigration(name) {
   if (!name) {
     throw new Error('Migration name is required');
   }
-  
+
   // Convert the name to kebab-case if it's not already
   const formattedName = name
     .replace(/([a-z])([A-Z])/g, '$1-$2')
     .replace(/\s+/g, '-')
     .toLowerCase();
-  
+
   console.log(`Creating migration: ${formattedName}`);
-  
+
   try {
     // Create a new migration file
     const fileName = await create(formattedName);
@@ -44,14 +44,14 @@ async function applyMigrations() {
   try {
     const db = await connect();
     const migrated = await up(db);
-    
+
     if (migrated.length === 0) {
       console.log('No pending migrations to apply');
     } else {
       console.log('Applied migrations:');
       migrated.forEach(fileName => console.log(`- ${fileName}`));
     }
-    
+
     await db.close();
     return migrated;
   } catch (error) {
@@ -68,14 +68,14 @@ async function rollbackMigration() {
   try {
     const db = await connect();
     const migrationsRolledBack = await down(db);
-    
+
     if (migrationsRolledBack.length === 0) {
       console.log('No migrations to roll back');
     } else {
       console.log('Rolled back migrations:');
       migrationsRolledBack.forEach(fileName => console.log(`- ${fileName}`));
     }
-    
+
     await db.close();
     return migrationsRolledBack;
   } catch (error) {
@@ -92,22 +92,22 @@ async function checkMigrationStatus() {
   try {
     const db = await connect();
     const migrationStatus = await status(db);
-    
+
     console.log('Migration status:');
-    
+
     if (migrationStatus.length === 0) {
       console.log('No migrations found');
     } else {
       const pending = migrationStatus.filter(m => !m.appliedAt);
       const applied = migrationStatus.filter(m => m.appliedAt);
-      
+
       console.log(`Applied migrations (${applied.length}):`);
       applied.forEach(m => console.log(`- ${m.fileName} (applied at: ${m.appliedAt})`));
-      
+
       console.log(`\nPending migrations (${pending.length}):`);
       pending.forEach(m => console.log(`- ${m.fileName}`));
     }
-    
+
     await db.close();
     return migrationStatus;
   } catch (error) {
@@ -116,9 +116,4 @@ async function checkMigrationStatus() {
   }
 }
 
-module.exports = {
-  createMigration,
-  applyMigrations,
-  rollbackMigration,
-  checkMigrationStatus
-};
+export { createMigration, applyMigrations, rollbackMigration, checkMigrationStatus };

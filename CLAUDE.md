@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 This is a Next.js project bootstrapped with `create-next-app`. It uses:
+
 - Next.js 15.3.2 with the App Router
 - React 18
 - TypeScript
@@ -23,7 +24,7 @@ This is a Next.js project bootstrapped with `create-next-app`. It uses:
 ### Development
 
 ```bash
-# Start development server with Turbopack (hot module reloading)
+# Start development server with hot module reloading
 npm run dev
 
 # Start complete development environment (MongoDB + migrations + Next.js server)
@@ -108,10 +109,12 @@ npm run db:reset          # Roll back all migrations and reapply them
 ## Database Configuration
 
 The project is set up with dual database configurations:
+
 - Local development: MongoDB running in Docker
 - Production: AWS DocumentDB (MongoDB-compatible)
 
 To connect to the database:
+
 ```typescript
 import { connectToDatabase } from '@/lib/db/mongoose';
 
@@ -159,6 +162,7 @@ await logout();
 ### Environment Variables
 
 Required environment variables for authentication:
+
 ```
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key-here-change-in-production
@@ -212,7 +216,7 @@ import { useTheme } from 'next-themes';
 
 function ThemeSwitcher() {
   const { setTheme } = useTheme();
-  
+
   return (
     <div>
       <button onClick={() => setTheme('light')}>Light</button>
@@ -242,28 +246,21 @@ This creates a timestamped migration file in `/src/db/migrations/` with `up` and
 module.exports = {
   async up(db, client) {
     // Update all users to have a default role
-    await db.collection('users').updateMany(
-      { role: { $exists: false } },
-      { $set: { role: 'user' } }
-    );
-    
+    await db
+      .collection('users')
+      .updateMany({ role: { $exists: false } }, { $set: { role: 'user' } });
+
     // Create an index on the role field
-    await db.collection('users').createIndex(
-      { role: 1 },
-      { background: true }
-    );
+    await db.collection('users').createIndex({ role: 1 }, { background: true });
   },
 
   async down(db, client) {
     // Remove the role field from all users
-    await db.collection('users').updateMany(
-      {},
-      { $unset: { role: "" } }
-    );
-    
+    await db.collection('users').updateMany({}, { $unset: { role: '' } });
+
     // Drop the index
     await db.collection('users').dropIndex('role_1');
-  }
+  },
 };
 ```
 
@@ -308,6 +305,7 @@ The project includes a complete local OpenTelemetry monitoring stack:
 2. **Jaeger**: UI for visualizing and exploring traces
 
 When you run `npm run dev:full`, the entire stack is automatically started. Access the monitoring interfaces at:
+
 - Jaeger UI: http://localhost:16686
 - OpenTelemetry Collector: http://localhost:4318
 
@@ -339,16 +337,16 @@ import { createApiSpan, createDatabaseSpan, addSpanAttributes } from '@/telemetr
 export async function GET(request: NextRequest) {
   return await createApiSpan('example.get', async () => {
     // Your API logic here
-    
+
     // Add custom attributes to spans
     addSpanAttributes({ 'custom.attribute': 'value' });
-    
+
     // Create spans for database operations
     const result = await createDatabaseSpan('find', 'users', async () => {
       // Database query here
       return await User.find();
     });
-    
+
     return NextResponse.json({ data: result });
   });
 }
@@ -368,10 +366,97 @@ All telemetry data is sent to the configured OpenTelemetry collector endpoint, w
 ### Docker Configuration
 
 The OpenTelemetry setup is defined in:
+
 - `docker-compose.yml` - Container definitions for collector and Jaeger
 - `otel-collector-config.yaml` - Collector configuration
 
 When switching to production, the OpenTelemetry configuration should be updated to forward telemetry data to your AWS monitoring services instead of the local Jaeger instance.
+
+## TypeScript and Code Style Guidelines
+
+### TypeScript Guidelines
+
+1. **Avoid the `any` Type**
+
+   - Never use `any` type unless absolutely necessary
+   - Use proper type definitions for improved safety and IDE support
+   - For dynamic or unknown types, use `unknown` with proper type narrowing:
+
+   ```typescript
+   // INCORRECT
+   function handleError(error: any) {
+     console.error(error.message); // Unsafe - error might not have a message property
+   }
+
+   // CORRECT
+   function handleError(error: unknown) {
+     if (error instanceof Error) {
+       console.error(error.message);
+     } else {
+       console.error(String(error));
+     }
+   }
+   ```
+
+2. **Type Attributes and Parameters Properly**
+
+   - For object maps, use `Record<K, V>` with specific types instead of `Record<string, any>`
+   - Example:
+
+   ```typescript
+   // INCORRECT
+   function addAttributes(attributes: Record<string, any>) {
+     // Implementation
+   }
+
+   // CORRECT
+   function addAttributes(
+     attributes: Record<string, string | number | boolean | string[] | number[]>
+   ) {
+     // Implementation
+   }
+   ```
+
+3. **Use Generic Types for Better Type Safety**
+
+   - For functions that can work with different data types, use generics:
+
+   ```typescript
+   // Correct use of generics
+   async function fetchData<T>(url: string): Promise<T> {
+     const response = await fetch(url);
+     return response.json();
+   }
+
+   // Usage
+   const user = await fetchData<User>('/api/user');
+   ```
+
+### JSX and React Guidelines
+
+1. **Use Proper HTML Entities in JSX**
+
+   - Replace apostrophes with `&apos;` or `&#39;`
+   - Replace quotes with `&quot;`
+
+   ```tsx
+   // INCORRECT
+   <p>Don't forget to check the user's profile</p>
+
+   // CORRECT
+   <p>Don&apos;t forget to check the user&apos;s profile</p>
+   ```
+
+2. **Avoid Unused Imports**
+   - Remove any unused components or utility imports
+   - ESLint will flag these with the `no-unused-vars` rule
+
+### Code Style and Formatting
+
+- The project uses Prettier for code formatting
+- ESLint is configured for TypeScript and React best practices
+- Pre-commit hooks automatically format and lint code before commits
+- The code should follow all ESLint rules without disabling them
 
 ## Notes
 

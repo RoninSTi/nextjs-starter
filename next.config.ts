@@ -1,11 +1,6 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* Enable instrumentation for OpenTelemetry */
-  experimental: {
-    instrumentationHook: true,
-  },
-  
   /* Add environment variables for OpenTelemetry */
   env: {
     OTEL_SERVICE_NAME: 'nextjs-starter',

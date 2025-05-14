@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
+      $or: [{ email }, { username }],
     });
 
     if (existingUser) {
@@ -41,32 +41,36 @@ export async function POST(req: NextRequest) {
     await newUser.save();
 
     // Return success response (omit password)
-    return NextResponse.json({
-      id: newUser._id,
-      username: newUser.username,
-      email: newUser.email,
-      createdAt: newUser.createdAt,
-    }, { status: 201 });
-
-  } catch (error: any) {
+    return NextResponse.json(
+      {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        createdAt: newUser.createdAt,
+      },
+      { status: 201 }
+    );
+  } catch (error: unknown) {
     console.error('Registration error:', error);
-    
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(
-        (err: any) => err.message
-      );
-      
+
+    // Type guard to handle MongoDB validation errors
+    if (
+      error &&
+      typeof error === 'object' &&
+      'name' in error &&
+      error.name === 'ValidationError' &&
+      'errors' in error
+    ) {
+      const validationError = error as { errors: Record<string, { message: string }> };
+      const validationErrors = Object.values(validationError.errors).map(err => err.message);
+
       return NextResponse.json(
         { error: 'Validation failed', details: validationErrors },
         { status: 400 }
       );
     }
-    
+
     // Handle other errors
-    return NextResponse.json(
-      { error: 'Registration failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
   }
 }

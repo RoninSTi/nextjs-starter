@@ -1,11 +1,12 @@
-import NextAuth, { DefaultSession } from 'next-auth';
-import { JWT } from 'next-auth/jwt';
+// Using imports with type prefix to avoid unused import ESLint errors
+import type { DefaultSession } from 'next-auth';
+import type { JWT as NextAuthJWT } from 'next-auth/jwt';
 
 declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
-    } & DefaultSession['user']
+    } & DefaultSession['user'];
   }
 
   interface User {
@@ -16,7 +17,7 @@ declare module 'next-auth' {
 }
 
 declare module 'next-auth/jwt' {
-  interface JWT {
+  interface JWT extends NextAuthJWT {
     id: string;
   }
 }

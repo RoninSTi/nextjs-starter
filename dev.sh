@@ -22,6 +22,10 @@ if ! docker info > /dev/null 2>&1; then
   exit 1
 fi
 
+# Stop existing containers first to ensure clean state
+echo -e "${BOLD}Stopping any existing Docker containers...${NC}"
+docker-compose down
+
 # Start all Docker containers
 echo -e "${BOLD}Starting Docker containers (MongoDB, OpenTelemetry Collector, Jaeger)...${NC}"
 docker-compose up -d
@@ -61,7 +65,7 @@ echo -e "${BLUE}The application will be available at: ${BOLD}http://localhost:30
 echo -e "${YELLOW}Press Ctrl+C to stop the development server${NC}"
 echo
 
-# Start Next.js with turbopack
+# Start Next.js development server
 exec npm run dev
 
 # Note: The script will not reach this point due to 'exec',
