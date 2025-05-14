@@ -15,6 +15,7 @@ This is a Next.js project bootstrapped with `create-next-app`. It uses:
 - Docker for local development environment
 - NextAuth.js for authentication
 - next-themes for dark mode support
+- migrate-mongo for database migrations
 
 ## Common Commands
 
@@ -23,6 +24,12 @@ This is a Next.js project bootstrapped with `create-next-app`. It uses:
 ```bash
 # Start development server with Turbopack (hot module reloading)
 npm run dev
+
+# Start complete development environment (MongoDB + migrations + Next.js server)
+npm run dev:full
+
+# Stop development environment and shut down MongoDB
+npm run dev:stop
 
 # Build the application for production
 npm run build
@@ -33,11 +40,19 @@ npm run start
 # Run ESLint to check for code issues
 npm run lint
 
-# Start local MongoDB Docker container
+# Start local MongoDB Docker container manually
 docker-compose up -d
 
-# Stop local MongoDB Docker container
+# Stop local MongoDB Docker container manually
 docker-compose down
+
+# Database migrations
+npm run db:migrate        # Apply all pending migrations
+npm run db:rollback       # Roll back the last applied migration
+npm run db:status         # Show migration status
+npm run db:create-migration my-migration-name  # Create a new migration
+npm run db:seed           # Seed database with development data
+npm run db:reset          # Roll back all migrations and reapply them
 ```
 
 ## Project Structure
@@ -62,11 +77,15 @@ docker-compose down
   - `db/` - Database connection utilities
     - `mongoose.ts` - MongoDB connection with Mongoose
     - `config.ts` - Database configuration for different environments
+    - `migration-utils.js` - Helper functions for database migrations
   - `auth/` - Authentication utilities
     - `auth.ts` - Client-side authentication hooks and functions
     - `auth-options.ts` - Next Auth configuration
 - `/src/models/` - Mongoose models
   - `User.ts` - User model for authentication
+- `/src/db/` - Database-related code
+  - `migrations/` - Database migration files
+  - `seed.js` - Seed script for development data
 
 ## Configuration Files
 
@@ -76,6 +95,7 @@ docker-compose down
 - `eslint.config.mjs` - ESLint configuration
 - `docker-compose.yml` - Docker configuration for local MongoDB
 - `components.json` - ShadCN UI configuration
+- `migrate-mongo-config.js` - Database migration configuration
 - `.env.local.example` - Example local environment variables
 - `.env.production.example` - Example production environment variables
 
@@ -197,6 +217,79 @@ function ThemeSwitcher() {
 }
 ```
 
+## Database Migrations
+
+The project uses migrate-mongo for database schema migrations, allowing for versioned database changes.
+
+### Creating Migrations
+
+Create a new migration file:
+
+```bash
+npm run db:create-migration add-user-role-field
+```
+
+This creates a timestamped migration file in `/src/db/migrations/` with `up` and `down` functions:
+
+```javascript
+// Example migration
+module.exports = {
+  async up(db, client) {
+    // Update all users to have a default role
+    await db.collection('users').updateMany(
+      { role: { $exists: false } },
+      { $set: { role: 'user' } }
+    );
+    
+    // Create an index on the role field
+    await db.collection('users').createIndex(
+      { role: 1 },
+      { background: true }
+    );
+  },
+
+  async down(db, client) {
+    // Remove the role field from all users
+    await db.collection('users').updateMany(
+      {},
+      { $unset: { role: "" } }
+    );
+    
+    // Drop the index
+    await db.collection('users').dropIndex('role_1');
+  }
+};
+```
+
+### Running Migrations
+
+Apply all pending migrations:
+
+```bash
+npm run db:migrate
+```
+
+Check migration status:
+
+```bash
+npm run db:status
+```
+
+Rollback the most recent migration:
+
+```bash
+npm run db:rollback
+```
+
+### Migration Best Practices
+
+1. Always implement both `up` and `down` functions
+2. Make migrations idempotent (can be run multiple times without side effects)
+3. Keep migrations small and focused on specific changes
+4. Use transactions where possible for atomicity
+5. Test migrations in development before applying to production
+6. Document complex migrations with comments
+
 ## Notes
 
 - The project uses Geist font from Google Fonts (both sans and mono variants)
@@ -204,3 +297,4 @@ function ThemeSwitcher() {
 - ShadCN UI components are fully customizable through the source files in `/src/components/ui/`
 - The project structure follows Next.js App Router conventions
 - For production, set the MONGODB_URI environment variable to your AWS DocumentDB connection string
+- Database migrations are managed with migrate-mongo and custom utility functions
